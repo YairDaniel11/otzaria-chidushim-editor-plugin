@@ -1,0 +1,30 @@
+{
+  "id": "com.haim_mendelson.chidushim_editor",
+  "name": "עורך חידושים",
+  "version": "1.0.0",
+  "description": "עריכת חידושים והערות אישיות: טקסט ראשי עם עוגני הערות ממוספרים, חלונות פירוש, פריסות דף, אינדקס וחיפוש.",
+  "author": "חיים מנדלסון",
+  "type": "webapp",
+  "entrypoint": "index.html",
+  "icon": "icon.svg",
+  "category": "Utilities",
+  "stability": "beta",
+  "minAppVersion": "0.9.96",
+  "permissions": [
+    "plugin.storage.read",
+    "plugin.storage.write",
+    "ui.feedback",
+    "events.subscribe:theme.changed"
+  ],
+  "schemaVersion": 1,
+  "sdkVersion": "1.x",
+  "contributes": {
+    "toolTab": {
+      "title": "עורך חידושים",
+      "iconName": "note_24_regular",
+      "order": 130,
+      "allowOrderBeforeBuiltIns": false,
+      "defaultPinned": true
+    }
+  }
+}

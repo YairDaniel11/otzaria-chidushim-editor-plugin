@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>עורך חידושים</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── גלילה — חובה ─────────────────────────────── */
+  html, body { height: 100%; overflow-y: auto; overflow-x: hidden; }
+
+  /* ── משתני עיצוב (ברירת מחדל, מוחלפים ע"י applyTheme) ── */
+  :root {
+    --color-primary: #6750A4; --color-on-primary: #FFFFFF;
+    --color-secondary: #625B71; --color-on-secondary: #FFFFFF;
+    --color-surface: #FFFBFE; --color-on-surface: #1C1B1F;
+    --color-surface-container-highest: #E6E0E9;
+    --color-error: #B3261E; --color-on-error: #FFFFFF;
+    --color-outline: #79747E;
+    --color-primary-subtle: rgba(103,80,164,0.12);
+    --color-secondary-subtle: rgba(98,91,113,0.12);
+    --font-main: 'FrankRuhlCLM', 'David', serif;
+    --font-size-base: 18px;
+    --line-height: 1.5;
+    --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-pill: 999px;
+  }
+
+  body {
+    font-family: var(--font-main);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height);
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    direction: rtl;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── כותרת עליונה אחידה ───────────────────────── */
+  .plugin-header {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; padding: 10px 16px; flex: 0 0 auto;
+    border-bottom: 1px solid var(--color-outline);
+    background: var(--color-surface);
+  }
+  .plugin-header h1 { font-size: 1.1em; font-weight: 700; color: var(--color-on-surface); text-align: center; }
+  .settings-btn {
+    position: absolute; left: 12px; background: none; border: none; cursor: pointer;
+    color: var(--color-on-surface); padding: 6px; border-radius: var(--radius-sm);
+    transition: background 0.15s; display: flex; align-items: center;
+  }
+  .settings-btn:hover { background: var(--color-secondary-subtle); }
+
+  /* ── רצועת לשוניות ────────────────────────────── */
+  .tabs-ribbon {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; overflow-x: auto; overflow-y: hidden;
+    border-bottom: 1px solid var(--color-outline);
+    background: var(--color-surface-container-highest);
+  }
+  .tabs-group { display: flex; align-items: center; gap: 6px; }
+  .tabs-group.grow { margin-inline-start: auto; }
+
+  .tab-btn {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    background: transparent; color: var(--color-on-surface);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-pill);
+    padding: 4px 12px; cursor: pointer; font-family: var(--font-main); font-size: 0.72em;
+    transition: background 0.15s;
+  }
+  .tab-btn:hover { background: var(--color-secondary-subtle); }
+  .tab-btn.active { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); font-weight: 700; }
+  .tab-close { cursor: pointer; font-weight: 700; border-radius: var(--radius-pill); padding: 0 5px; line-height: 1; }
+  .tab-close:hover { background: var(--color-secondary-subtle); }
+
+  /* ── כפתורים ─────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    background: transparent; color: var(--color-on-surface);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-sm);
+    padding: 4px 9px; cursor: pointer; font-family: var(--font-main); font-size: 0.7em;
+    white-space: nowrap; transition: background 0.15s, opacity 0.15s;
+  }
+  .btn:hover { background: var(--color-primary-subtle); }
+  .btn.active { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+  .btn.filled { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); font-weight: 700; }
+  .btn.filled:hover { opacity: 0.88; background: var(--color-primary); }
+  .btn.danger { color: var(--color-error); border-color: var(--color-error); }
+  .btn.icon-only { padding: 4px 6px; }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+
+  .select {
+    height: 26px; padding: 0 6px; font-family: var(--font-main); font-size: 0.68em;
+    color: var(--color-on-surface); background: var(--color-surface);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-sm);
+    direction: rtl; outline: none; max-width: 150px;
+  }
+  .select:focus { border-color: var(--color-primary); }
+
+  .input {
+    padding: 7px 10px; border: 1.5px solid var(--color-outline); border-radius: var(--radius-sm);
+    font-family: var(--font-main); font-size: 0.85em; color: var(--color-on-surface);
+    background: var(--color-surface); direction: rtl; outline: none; width: 100%;
+    transition: border-color 0.15s;
+  }
+  .input:focus { border-color: var(--color-primary); }
+  textarea.input { min-height: 140px; resize: vertical; line-height: 1.4; }
+
+  .ribbon-label { font-size: 0.65em; opacity: 0.75; white-space: nowrap; }
+
+  /* ── רצועת כלים ראשית ─────────────────────────── */
+  .app-ribbon {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 6px 10px; border-bottom: 1px solid var(--color-outline);
+    background: var(--color-surface);
+  }
+  .app-ribbon.collapsed { display: none; }
+  .ribbon-group {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--color-secondary-subtle);
+    border-radius: var(--radius-pill); padding: 3px 8px;
+  }
+
+  /* ── שולחן העבודה ────────────────────────────── */
+  .workspace { flex: 1 1 auto; display: flex; min-height: 0; overflow: hidden; }
+
+  .index-strip {
+    flex: 0 0 auto; width: min(240px, 45vw);
+    background: var(--color-surface-container-highest);
+    border-inline-start: 1px solid var(--color-outline);
+    overflow-y: auto; overflow-x: hidden; padding: 10px; direction: rtl;
+  }
+  .index-strip.collapsed { display: none; }
+  .index-strip h2 { font-size: 0.72em; font-weight: 700; color: var(--color-secondary); margin-bottom: 6px; }
+  .index-item {
+    padding: 6px 4px; border-bottom: 1px solid var(--color-outline); cursor: pointer;
+    font-size: 0.72em; line-height: 1.35;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background 0.15s;
+  }
+  .index-item:hover { background: var(--color-primary-subtle); }
+  .index-item.expanded {
+    white-space: normal; text-overflow: clip; background: var(--color-surface);
+    border-inline-end: 3px solid var(--color-primary); padding-inline-end: 6px; border-radius: var(--radius-sm);
+  }
+  .index-num { color: var(--color-primary); font-weight: 700; }
+  .index-empty { font-size: 0.72em; opacity: 0.7; padding: 8px 2px; }
+
+  /* ── פריסות ──────────────────────────────────── */
+  .panels-wrapper { flex: 1 1 auto; display: flex; gap: 6px; padding: 8px; overflow: auto; min-width: 0; }
+
+  .panels-wrapper.layout-shurot { flex-direction: column; overflow-y: auto; }
+  .panels-wrapper.layout-shurot #mainPanel { width: 100%; flex: 0 0 auto; min-height: 40%; }
+  .panels-wrapper.layout-shurot #commentariesWrapper { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; }
+
+  .panels-wrapper.layout-torim { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; }
+  .panels-wrapper.layout-torim #mainPanel { min-width: 240px; flex: 1 1 auto; }
+  .panels-wrapper.layout-torim #commentariesWrapper { display: flex; flex-direction: row; gap: 6px; flex: 2 1 auto; min-width: 0; }
+
+  .panels-wrapper.layout-tor-v-shurot { display: grid; grid-template-columns: 38% 1fr; grid-template-rows: 100%; gap: 6px; }
+  .panels-wrapper.layout-tor-v-shurot #mainPanel { grid-column: 1; grid-row: 1; height: 100%; }
+  .panels-wrapper.layout-tor-v-shurot #commentariesWrapper { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+
+  .panels-wrapper.layout-shura-v-torim { display: grid; grid-template-columns: 100%; grid-template-rows: 42% 1fr; gap: 6px; }
+  .panels-wrapper.layout-shura-v-torim #mainPanel { grid-column: 1; grid-row: 1; width: 100%; }
+  .panels-wrapper.layout-shura-v-torim #commentariesWrapper { grid-column: 1; grid-row: 2; display: flex; flex-direction: row; gap: 6px; overflow-x: auto; min-width: 0; }
+
+  .panels-wrapper.layout-daf { display: grid; grid-template-columns: 1fr 2fr 1fr; grid-template-rows: auto auto; gap: 6px; overflow-y: auto; }
+  .panels-wrapper.layout-daf #mainPanel { grid-column: 2; grid-row: 1; }
+  .panels-wrapper.layout-daf #commentariesWrapper { display: contents; }
+  .panels-wrapper.layout-daf .commentary-panel:nth-of-type(1) { grid-column: 1; grid-row: 1; }
+  .panels-wrapper.layout-daf .commentary-panel:nth-of-type(2) { grid-column: 3; grid-row: 1; }
+  .panels-wrapper.layout-daf .commentary-panel:nth-of-type(n+3) { grid-column: 1 / span 3; grid-row: 2; }
+
+  @media (max-width: 700px) {
+    .panels-wrapper.layout-daf,
+    .panels-wrapper.layout-tor-v-shurot,
+    .panels-wrapper.layout-shura-v-torim,
+    .panels-wrapper.layout-torim { display: flex; flex-direction: column; }
+    .panels-wrapper.layout-daf #commentariesWrapper,
+    .panels-wrapper.layout-torim #commentariesWrapper,
+    .panels-wrapper.layout-shura-v-torim #commentariesWrapper { display: flex; flex-direction: column; }
+  }
+
+  .panels-wrapper.ratio-dynamic { display: flex; flex-direction: column; }
+  .panels-wrapper.ratio-dynamic #mainPanel { flex: 1 1 auto; transition: flex 0.3s ease; }
+  .panels-wrapper.ratio-dynamic #commentariesWrapper { flex: 1 1 auto; transition: flex 0.3s ease; display: flex; flex-direction: column; gap: 6px; }
+
+  /* ── חלון עריכה ──────────────────────────────── */
+  .editor-panel {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-outline);
+    border-radius: var(--radius-md);
+    display: flex; flex-direction: column;
+    flex: 1 1 auto; min-height: 90px; min-width: 170px;
+    max-width: 100%; overflow: hidden; position: relative;
+    transition: border-color 0.2s;
+  }
+  .editor-panel.hidden-panel { display: none; }
+  .editor-panel.commentary-panel.active-target { border-color: var(--color-primary); }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+    padding: 3px 6px; min-height: 28px; flex: 0 0 auto; flex-wrap: wrap;
+    background: var(--color-surface-container-highest);
+    border-bottom: 1px solid var(--color-outline);
+  }
+  .panel-header-side { display: flex; align-items: center; gap: 3px; }
+  .header-title-wrapper { display: flex; align-items: center; justify-content: center; flex: 1 1 auto; min-width: 60px; }
+  .editable-title {
+    font-weight: 700; font-size: 0.82em; outline: none; text-align: center;
+    color: var(--color-primary); border-bottom: 1px dashed transparent; padding: 0 4px;
+  }
+  .editable-title:hover, .editable-title:focus { border-bottom-color: var(--color-primary); }
+  .active-badge {
+    display: none; font-size: 0.55em; font-weight: 700; padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary); color: var(--color-on-primary);
+  }
+  .editor-panel.active-target .active-badge { display: inline-block; }
+
+  /* ── סרגל עיצוב טקסט ─────────────────────────── */
+  .format-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 3px; flex: 0 0 auto;
+    padding: 3px 5px; background: var(--color-secondary-subtle);
+    border-bottom: 1px solid var(--color-outline);
+  }
+  .format-bar.hidden { display: none; }
+  .fmt-divider { width: 1px; height: 14px; background: var(--color-outline); margin: 0 2px; }
+  .fmt-color {
+    width: 24px; height: 24px; padding: 0; cursor: pointer; background: transparent;
+    border: 1px solid var(--color-outline); border-radius: var(--radius-sm);
+  }
+
+  /* ── אזור תוכן ───────────────────────────────── */
+  .content-area {
+    flex: 1 1 auto; padding: 12px; overflow-y: auto; overflow-x: hidden;
+    outline: none; line-height: var(--line-height); min-height: 60px;
+  }
+  [contenteditable="true"] { caret-color: var(--color-primary); cursor: text; }
+  [contenteditable="true"]:focus { outline: none; }
+
+  .note-anchor { cursor: pointer; border-radius: var(--radius-sm); display: inline; transition: background 0.3s; }
+  .note-anchor sup {
+    color: var(--color-primary); font-weight: 700; font-size: 0.7em;
+    vertical-align: super; line-height: 0; margin-inline-start: 1px;
+  }
+  .note-anchor.dh { background: var(--color-primary-subtle); border-radius: var(--radius-sm); padding: 0 2px; }
+  .note-anchor.dh sup { display: none; }
+  .note-anchor.flash { background: var(--color-primary-subtle); }
+
+  .panel-num-hebrew .dh-title,
+  .panel-num-numeric .dh-title,
+  .panel-num-rashi .dh-title,
+  .panel-num-brackets .dh-title { display: none; }
+
+  .rashi-font { font-family: 'NotoRashiHebrew', var(--font-main), serif; }
+
+  .commentary-container.boxed-view { display: flex; flex-direction: column; gap: 8px; }
+  .commentary-container.boxed-view .commentary-item {
+    display: block; background: var(--color-surface-container-highest);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-sm);
+    padding: 6px 8px; line-height: var(--line-height);
+  }
+  .commentary-container.continuous-view { display: block; text-align: justify; line-height: var(--line-height); }
+  .commentary-container.continuous-view .commentary-item {
+    display: inline; background: transparent; border: none; padding: 0; margin: 0;
+  }
+  .commentary-container.continuous-view .commentary-item::after { content: " "; padding: 0 4px; }
+
+  .dh-num {
+    font-weight: 700; color: var(--color-primary); font-size: 0.85em; cursor: pointer;
+    padding: 0 3px; border-radius: var(--radius-sm); background: var(--color-primary-subtle);
+    display: inline-block;
+  }
+  .dh-title { font-weight: 700; cursor: pointer; margin-inline-start: 3px; display: inline; }
+  .comm-text { outline: none; display: inline; min-width: 30px; }
+  .comm-text:empty::before {
+    content: attr(data-placeholder); opacity: 0.55; font-style: italic;
+    pointer-events: none; display: inline-block;
+  }
+  .empty-hint { font-size: 0.8em; opacity: 0.65; padding: 6px 2px; }
+
+  /* ── תפריט הקשר ──────────────────────────────── */
+  .context-menu {
+    position: fixed; z-index: 300; display: none; min-width: 160px; padding: 4px 0;
+    background: var(--color-surface-container-highest);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-md);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.20); font-size: 0.75em;
+  }
+  .context-menu-item { padding: 7px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .context-menu-item:hover { background: var(--color-primary-subtle); }
+  .context-menu-title { padding: 6px 12px; opacity: 0.7; border-top: 1px solid var(--color-outline); }
+
+  /* ── מודאלים ─────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.30);
+  }
+  .modal-overlay.open { display: block; }
+  .app-modal {
+    display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 201; width: min(460px, calc(100vw - 24px)); max-height: calc(100vh - 40px);
+    overflow-y: auto; padding: 18px;
+    background: var(--color-surface-container-highest);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+  .app-modal.open { display: block; }
+  .app-modal h3 {
+    font-size: 1em; font-weight: 700; color: var(--color-primary);
+    border-bottom: 1px solid var(--color-outline); padding-bottom: 8px; margin-bottom: 14px;
+  }
+  .app-modal h3.danger { color: var(--color-error); }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; margin-bottom: 4px; font-size: 0.8em; font-weight: 700; }
+  .modal-actions { display: flex; justify-content: flex-start; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .modal-note { font-size: 0.8em; margin-bottom: 12px; line-height: 1.4; }
+  .modal-edit-area {
+    min-height: 110px; padding: 8px; outline: none; font-size: 0.9em;
+    background: var(--color-surface); color: var(--color-on-surface);
+    border: 1px solid var(--color-outline); border-radius: var(--radius-sm);
+  }
+
+  /* ── פאנל הגדרות ─────────────────────────────── */
+  .overlay-scrim {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.30);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+  }
+  .overlay-scrim.open { opacity: 1; pointer-events: auto; }
+  .overlay-panel {
+    position: fixed; top: 10px; bottom: 12px; left: 10px;
+    width: min(320px, calc(100vw - 20px));
+    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-secondary) 15%, var(--color-surface));
+    border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 20px; overflow-y: auto; z-index: 101;
+    opacity: 0; transform: translateX(-30px); pointer-events: none;
+    transition: opacity 0.2s, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .overlay-panel.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .settings-header h2 { font-size: 1.1em; font-weight: 700; color: var(--color-primary); }
+  .close-btn {
+    background: none; border: none; cursor: pointer; color: var(--color-on-surface);
+    padding: 4px; border-radius: var(--radius-sm); display: flex; align-items: center;
+  }
+  .close-btn:hover { background: var(--color-secondary-subtle); }
+  .settings-section { margin-bottom: 22px; }
+  .settings-section-title {
+    font-size: 0.78em; font-weight: 700; color: var(--color-secondary);
+    letter-spacing: 0.05em; margin-bottom: 10px;
+  }
+  .settings-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--color-outline);
+  }
+  .settings-label { font-size: 0.85em; }
+  .settings-about { font-size: 0.8em; opacity: 0.75; margin-bottom: 4px; }
+
+  /* ── הדפסה ───────────────────────────────────── */
+  @media print {
+    .plugin-header, .tabs-ribbon, .app-ribbon, .index-strip, .format-bar,
+    .context-menu, .app-modal, .modal-overlay, .overlay-panel, .overlay-scrim,
+    button, select, .active-badge { display: none !important; }
+    html, body, .workspace, .panels-wrapper { height: auto !important; overflow: visible !important; display: block !important; }
+    .editor-panel { border: none !important; overflow: visible !important; display: block !important; margin-bottom: 22px !important; page-break-inside: avoid; }
+    .panel-header { background: transparent !important; border-bottom: 1.5px solid !important; padding: 4px 0 !important; }
+    .header-title-wrapper { justify-content: flex-start !important; }
+    .editable-title { font-size: 1.1em !important; }
+    .content-area { overflow: visible !important; padding: 0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="plugin-header">
+  <h1>עורך חידושים</h1>
+  <button class="settings-btn" id="settingsBtn" aria-label="הגדרות"></button>
+</header>
+
+<div class="tabs-ribbon" id="tabsRibbon">
+  <div class="tabs-group" id="tabsGroup"></div>
+  <div class="tabs-group grow">
+    <span class="ribbon-label" id="saveIndicator">מוכן</span>
+    <button class="btn filled" id="btnAddPane" type="button">חלון פירוש חדש</button>
+  </div>
+</div>
+
+<div class="app-ribbon" id="appRibbon">
+  <div class="ribbon-group">
+    <button class="btn" id="btnToggleIndex" type="button">אינדקס</button>
+  </div>
+  <div class="ribbon-group" id="hiddenPanelsGroup" hidden>
+    <span class="ribbon-label">מוסתרים:</span>
+    <div id="hiddenPanelsContainer" style="display:flex; gap:4px;"></div>
+  </div>
+  <div class="ribbon-group">
+    <button class="btn" id="btnExport" type="button">גיבוי</button>
+    <button class="btn" id="btnImport" type="button">שחזור</button>
+    <button class="btn" id="btnPrint" type="button">הדפסה</button>
+  </div>
+  <div class="ribbon-group">
+    <label class="ribbon-label" for="ratioSelect">יחס:</label>
+    <select class="select" id="ratioSelect">
+      <option value="">ללא יחס</option>
+      <option value="ratio-stable">יחס יציב וגלילה</option>
+      <option value="ratio-dynamic">יחס דינמי</option>
+    </select>
+  </div>
+  <div class="ribbon-group">
+    <label class="ribbon-label" for="layoutSelect">פריסה:</label>
+    <select class="select" id="layoutSelect">
+      <option value="layout-shurot">שורות</option>
+      <option value="layout-torim">טורים</option>
+      <option value="layout-tor-v-shurot">טור ושורות</option>
+      <option value="layout-shura-v-torim">שורה וטורים</option>
+      <option value="layout-daf">צורת הדף</option>
+    </select>
+  </div>
+</div>
+
+<div class="workspace">
+  <aside class="index-strip" id="indexStrip">
+    <h2>סינון חלון</h2>
+    <select class="select" id="indexFilterSelect" style="width:100%; max-width:none; margin-bottom:6px;">
+      <option value="all">כל החלונות</option>
+    </select>
+    <label for="searchBox" class="ribbon-label">חיפוש בהערות</label>
+    <input type="text" class="input" id="searchBox" placeholder="חפש בהערות..." style="margin:4px 0 10px;" />
+    <h2>אינדקס הערות</h2>
+    <div id="indexList"></div>
+  </aside>
+
+  <main class="panels-wrapper layout-shurot" id="panelsWrapper">
+    <section class="editor-panel" id="mainPanel">
+      <div class="panel-header">
+        <div class="panel-header-side">
+          <button class="btn icon-only" id="btnToggleMainToolbar" type="button" aria-label="סרגל עריכה" title="פתיחת/סגירת סרגל עריכה"></button>
+        </div>
+        <div class="header-title-wrapper">
+          <span class="editable-title" id="mainTextTitle" contenteditable="true">טקסט ראשי</span>
+        </div>
+        <div class="panel-header-side">
+          <button class="btn icon-only" id="btnHideMain" type="button" aria-label="הסתר חלון" title="הסתרת החלון"></button>
+          <button class="btn icon-only danger" id="btnDeleteMain" type="button" aria-label="מחק ספר" title="מחיקת הספר"></button>
+        </div>
+      </div>
+      <div class="format-bar hidden" id="mainToolbar"></div>
+      <div class="content-area" id="mainText" contenteditable="false"></div>
+    </section>
+
+    <div id="commentariesWrapper" style="display:contents;"></div>
+  </main>
+</div>
+
+<div class="context-menu" id="noteContextMenu"></div>
+
+<div class="modal-overlay" id="globalOverlay"></div>
+
+<div class="app-modal" id="newBookModal">
+  <h3>יצירת חיבור חדש</h3>
+  <div class="form-group">
+    <label for="newBookTitleInput">שם החיבור</label>
+    <input type="text" class="input" id="newBookTitleInput" placeholder="לדוגמה: חידושים על מסכת שבת" />
+  </div>
+  <div class="form-group">
+    <label for="newBookFileInput">טעינת קובץ טקסט (TXT / HTML)</label>
+    <input type="file" class="input" id="newBookFileInput" accept=".txt,.html,.htm" />
+  </div>
+  <div class="form-group">
+    <label for="newBookTextInput">או הדבקת הטקסט הראשי</label>
+    <textarea class="input" id="newBookTextInput" placeholder="הדבק כאן את הטקסט..."></textarea>
+  </div>
+  <div class="modal-actions">
+    <button class="btn filled" id="btnSubmitNewBook" type="button">יצירה ושמירה</button>
+    <button class="btn" data-close-modal type="button">ביטול</button>
+  </div>
+</div>
+
+<div class="app-modal" id="noteModal">
+  <h3 id="noteModalTitle">עריכת הערה</h3>
+  <div class="modal-edit-area" id="noteModalContent" contenteditable="true"></div>
+  <div class="modal-actions">
+    <button class="btn filled" id="btnSaveNoteModal" type="button">סגירה ושמירה</button>
+    <button class="btn" data-close-modal type="button">ביטול</button>
+  </div>
+</div>
+
+<div class="app-modal" id="deletePaneModal">
+  <h3 class="danger">מחיקת חלון</h3>
+  <p class="modal-note" id="deletePaneDesc"></p>
+  <div class="form-group" id="moveNotesGroup" hidden>
+    <label for="deleteActionSelect">בחירת פעולה להערות החלון</label>
+    <select class="select" id="deleteActionSelect" style="width:100%; max-width:none;">
+      <option value="move">העברת ההערות לחלון אחר ומחיקה</option>
+      <option value="delete">מחיקת החלון וההערות שבו</option>
+    </select>
+    <div id="moveNotesSubGroup" style="margin-top:8px;">
+      <label for="moveNotesSelect">העברת ההערות אל</label>
+      <select class="select" id="moveNotesSelect" style="width:100%; max-width:none;"></select>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn danger" id="btnConfirmDelete" type="button">ביצוע מחיקה</button>
+    <button class="btn" data-close-modal type="button">ביטול</button>
+  </div>
+</div>
+
+<div class="app-modal" id="backupModal">
+  <h3 id="backupModalTitle">גיבוי הנתונים</h3>
+  <p class="modal-note" id="backupModalNote"></p>
+  <div class="form-group">
+    <label for="backupText">נתוני הגיבוי (JSON)</label>
+    <textarea class="input" id="backupText" spellcheck="false"></textarea>
+  </div>
+  <div class="form-group" id="backupFileGroup" hidden>
+    <label for="backupFileInput">או טעינה מקובץ</label>
+    <input type="file" class="input" id="backupFileInput" accept=".json" />
+  </div>
+  <div class="modal-actions">
+    <button class="btn filled" id="btnBackupPrimary" type="button">העתקה</button>
+    <button class="btn" data-close-modal type="button">סגירה</button>
+  </div>
+</div>
+
+<div class="overlay-scrim" id="scrim"></div>
+
+<aside class="overlay-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h2>הגדרות</h2>
+    <button class="close-btn" id="closeSettings" aria-label="סגור"></button>
+  </div>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">ברירות מחדל</h3>
+    <label class="settings-row" for="setDefaultLayout">
+      <span class="settings-label">פריסה</span>
+      <select class="select" id="setDefaultLayout">
+        <option value="layout-shurot">שורות</option>
+        <option value="layout-torim">טורים</option>
+        <option value="layout-tor-v-shurot">טור ושורות</option>
+        <option value="layout-shura-v-torim">שורה וטורים</option>
+        <option value="layout-daf">צורת הדף</option>
+      </select>
+    </label>
+    <label class="settings-row" for="setDefaultNum">
+      <span class="settings-label">סוג מספור</span>
+      <select class="select" id="setDefaultNum">
+        <option value="hebrew">אות (א, ב)</option>
+        <option value="numeric">מספר (1, 2)</option>
+        <option value="rashi">אות רש"י</option>
+        <option value="dh">ד"ה</option>
+      </select>
+    </label>
+    <label class="settings-row" for="setDefaultBracket">
+      <span class="settings-label">סוג סוגריים</span>
+      <select class="select" id="setDefaultBracket">
+        <option value="none">ללא</option>
+        <option value="round">עגולים ( )</option>
+        <option value="square">מרובעים [ ]</option>
+        <option value="curly">מסולסלים { }</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">תצוגה</h3>
+    <label class="settings-row" for="setShowIndex">
+      <span class="settings-label">הצגת האינדקס</span>
+      <input type="checkbox" id="setShowIndex" />
+    </label>
+    <label class="settings-row" for="setShowRibbon">
+      <span class="settings-label">הצגת רצועת הכלים</span>
+      <input type="checkbox" id="setShowRibbon" />
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">אודות</h3>
+    <p class="settings-about">עורך חידושים</p>
+    <p class="settings-about">גרסה: 1.0.0</p>
+    <p class="settings-about">פותח על ידי: חיים מנדלסון</p>
+  </section>
+</aside>
+
+<script>
+'use strict';
+
+/* ═══════════════ עזרי בסיס ═══════════════ */
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
+
+function localDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function hexToRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') return 'transparent';
+  if (hex.startsWith('rgba') || hex.startsWith('rgb')) return hex;
+  let clean = hex;
+  if (clean.length === 9) clean = clean.slice(0, 7);
+  if (clean.length !== 7) return clean;
+  const r = parseInt(clean.slice(1, 3), 16);
+  const g = parseInt(clean.slice(3, 5), 16);
+  const b = parseInt(clean.slice(5, 7), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return clean;
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+}
+
+function applyTheme(theme) {
+  if (!theme || !theme.colorScheme) return;
+  const cs = theme.colorScheme;
+  const r = document.documentElement;
+  r.style.setProperty('--color-primary', cs.primary);
+  r.style.setProperty('--color-on-primary', cs.onPrimary);
+  r.style.setProperty('--color-secondary', cs.secondary);
+  r.style.setProperty('--color-on-secondary', cs.onSecondary);
+  r.style.setProperty('--color-surface', cs.surface);
+  r.style.setProperty('--color-on-surface', cs.onSurface);
+  r.style.setProperty('--color-surface-container-highest', cs.surfaceContainerHighest);
+  r.style.setProperty('--color-error', cs.error);
+  r.style.setProperty('--color-on-error', cs.onError);
+  r.style.setProperty('--color-outline', cs.outline);
+  r.style.setProperty('--color-primary-subtle', hexToRgba(cs.primary, 0.12));
+  r.style.setProperty('--color-secondary-subtle', hexToRgba(cs.secondary, 0.12));
+  document.body.classList.toggle('dark-mode', theme.mode === 'dark');
+  if (theme.typography) {
+    const t = theme.typography;
+    if (t.fontFamily) r.style.setProperty('--font-main', "'" + t.fontFamily + "', 'David', serif");
+    if (t.fontSize) r.style.setProperty('--font-size-base', t.fontSize + 'px');
+    if (t.lineHeight) r.style.setProperty('--line-height', String(t.lineHeight));
+  }
+}
+
+async function call(method, params) {
+  try {
+    const res = await Otzaria.call(method, params || {});
+    if (!res || !res.success) {
+      console.error('Otzaria.' + method, res && res.error ? res.error.message : 'unknown error');
+      return null;
+    }
+    return res.data;
+  } catch (e) {
+    console.error('Otzaria.' + method, e);
+    return null;
+  }
+}
+
+async function toast(message, kind) {
+  const method = kind === 'error' ? 'ui.showError' : (kind === 'success' ? 'ui.showSuccess' : 'ui.showMessage');
+  await call(method, { message: message });
+}
+
+/* ═══════════════ אייקונים (SVG מוטבע) ═══════════════ */
+
+const ICON_PATHS = {
+  settings: '<path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08s-.03-.74-.07-1.08l2.33-1.82a.55.55 0 0 0 .13-.71l-2.21-3.82a.55.55 0 0 0-.67-.24l-2.75 1.1c-.57-.44-1.18-.8-1.85-1.07L14 2.42A.54.54 0 0 0 13.46 2h-4.42A.54.54 0 0 0 8.5 2.42l-.42 2.93c-.67.27-1.28.63-1.85 1.07L3.48 5.32a.54.54 0 0 0-.67.24L.6 9.38a.53.53 0 0 0 .13.71l2.33 1.82c-.04.34-.07.69-.07 1.09s.03.74.07 1.08L.73 15.9a.55.55 0 0 0-.13.71l2.21 3.82c.14.24.41.32.67.24l2.75-1.1c.57.44 1.18.8 1.85 1.07l.42 2.93c.06.3.3.43.54.43h4.42c.24 0 .48-.13.54-.43l.42-2.93c.67-.27 1.28-.63 1.85-1.07l2.75 1.1a.55.55 0 0 0 .67-.24l2.21-3.82a.55.55 0 0 0-.13-.71l-2.33-1.82z"/>',
+  dismiss: '<path d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 0 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06z"/>'
+};
+
+const STROKE_ICONS = {
+  eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M10.8 5.6A9.9 9.9 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a17 17 0 0 1-2.4 3.3"/><path d="M6.4 6.6A16.6 16.6 0 0 0 2 12s3.6 6.5 10 6.5c1.9 0 3.5-.5 4.9-1.3"/><path d="m3 3 18 18"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 8l5-5 5 5"/><path d="M12 3v12"/>',
+  print: '<path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  layers: '<path d="m12 2 10 5-10 5L2 7Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+  redo: '<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>',
+  'zoom-in': '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/><path d="M11 8v6M8 11h6"/>',
+  'zoom-out': '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/><path d="M8 11h6"/>',
+  bold: '<path d="M7 4h7a4 4 0 0 1 0 8H7Z"/><path d="M7 12h8a4 4 0 0 1 0 8H7Z"/>',
+  italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/>',
+  'align-right': '<path d="M21 6H3M21 12H9M21 18H3"/>',
+  'align-center': '<path d="M21 6H3M18 12H6M21 18H3"/>',
+  'align-left': '<path d="M21 6H3M15 12H3M21 18H3"/>',
+  'clear-format': '<path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><path d="m15 15 5 5M20 15l-5 5"/>',
+  move: '<circle cx="12" cy="12" r="9"/><path d="m11 8-4 4 4 4"/><path d="M7 12h9"/>'
+};
+
+function icon(name, size) {
+  const px = size || 14;
+  if (ICON_PATHS[name]) {
+    return '<svg width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + ICON_PATHS[name] + '</svg>';
+  }
+  const body = STROKE_ICONS[name] || '<circle cx="12" cy="12" r="9"/>';
+  return '<svg width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+}
+
+/* ═══════════════ מצב האפליקציה ═══════════════ */
+
+const STATE_KEY = 'chidushimState';
+const SETTINGS_KEY = 'chidushimSettings';
+
+const DEFAULT_SETTINGS = {
+  defaultLayout: 'layout-shurot',
+  defaultNumType: 'hebrew',
+  defaultBracket: 'none',
+  showIndex: true,
+  showRibbon: true
+};
+
+let appState = { activeBookId: null, books: [] };
+let settings = Object.assign({}, DEFAULT_SETTINGS);
+
+let isMainEditMode = false;
+let activeCommentaryAreaId = null;
+let saveTimer = null;
+let panelToDelete = null;
+let contextNoteId = null;
+let contextAreaId = null;
+let backupMode = 'export';
+let booted = false;
+
+const $ = (id) => document.getElementById(id);
+
+/* ═══════════════ שמירה וטעינה ═══════════════ */
+
+function setSaveIndicator(text) {
+  const el = $('saveIndicator');
+  if (el) el.textContent = text;
+}
+
+function triggerAutoSave() {
+  if (!booted) return;
+  setSaveIndicator('שומר...');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveCurrentState(); }, 700);
+}
+
+function collectCurrentBook() {
+  if (!appState.activeBookId) return null;
+  const book = appState.books.find(b => b.id === appState.activeBookId);
+  if (!book) return null;
+
+  book.title = ($('mainTextTitle').textContent || book.title || 'ללא שם').trim();
+  book.mainText = $('mainText').innerHTML || '';
+  book.settings = {
+    layout: $('layoutSelect').value,
+    ratio: $('ratioSelect').value,
+    lineHeight: $('mainText').style.lineHeight || ''
+  };
+
+  const commentaries = [];
+  document.querySelectorAll('.commentary-panel').forEach(panel => {
+    const container = panel.querySelector('.commentary-container');
+    if (!container) return;
+    const items = [];
+    container.querySelectorAll('.commentary-item').forEach(item => {
+      items.push({
+        id: item.getAttribute('data-id'),
+        title: item.querySelector('.dh-title') ? item.querySelector('.dh-title').textContent : '',
+        text: item.querySelector('.comm-text') ? item.querySelector('.comm-text').innerHTML : ''
+      });
+    });
+    commentaries.push({
+      id: container.id,
+      title: (panel.querySelector('.editable-title').textContent || 'פירוש').trim(),
+      numType: panel.querySelector('.num-type-select').value,
+      bracketType: panel.querySelector('.bracket-type-select').value,
+      view: container.classList.contains('continuous-view') ? 'continuous' : 'boxed',
+      hidden: panel.classList.contains('hidden-panel'),
+      items: items
+    });
+  });
+  book.commentaries = commentaries;
+  book.updatedAt = localDateStr();
+  return book;
+}
+
+async function persistState() {
+  await call('storage.set', { key: STATE_KEY, value: appState });
+}
+
+async function saveCurrentState() {
+  collectCurrentBook();
+  await persistState();
+  renderTabs();
+  setSaveIndicator('נשמר');
+}
+
+async function persistSettings() {
+  await call('storage.set', { key: SETTINGS_KEY, value: settings });
+}
+
+function makeStarterBook() {
+  const stamp = Date.now();
+  return {
+    id: 'book_' + stamp,
+    title: 'חידושים — דוגמה',
+    isClosed: false,
+    settings: { layout: settings.defaultLayout, ratio: '', lineHeight: '' },
+    mainText: 'סמנו כאן קטע טקסט בעכבר — ותיווצר עבורו הערה ממוספרת בחלון הפירוש שמשמאל. ' +
+      'להוספת טקסט משלכם: לחצו על כפתור העיפרון שבראש החלון כדי לעבור למצב עריכה, או צרו חיבור חדש מלשונית "חדש".',
+    commentaries: [{
+      id: 'notesArea_' + stamp,
+      title: 'חידושים והערות',
+      numType: settings.defaultNumType,
+      bracketType: settings.defaultBracket,
+      view: 'boxed',
+      hidden: false,
+      items: []
+    }]
+  };
+}
+
+async function loadStateFromStorage() {
+  const savedSettings = await call('storage.get', { key: SETTINGS_KEY });
+  settings = Object.assign({}, DEFAULT_SETTINGS, savedSettings || {});
+
+  const saved = await call('storage.get', { key: STATE_KEY });
+  if (saved && Array.isArray(saved.books)) appState = saved;
+
+  if (!appState.books || appState.books.length === 0) {
+    appState.books = [makeStarterBook()];
+    appState.activeBookId = appState.books[0].id;
+  }
+
+  const openBooks = appState.books.filter(b => !b.isClosed);
+  if (!appState.activeBookId || !openBooks.some(b => b.id === appState.activeBookId)) {
+    appState.activeBookId = openBooks.length ? openBooks[0].id : null;
+  }
+}
+
+/* ═══════════════ לשוניות וחיבורים ═══════════════ */
+
+function renderTabs() {
+  const group = $('tabsGroup');
+  group.innerHTML = '';
+
+  const toggleRibbonBtn = document.createElement('button');
+  toggleRibbonBtn.type = 'button';
+  toggleRibbonBtn.className = 'btn icon-only';
+  const ribbonHidden = $('appRibbon').classList.contains('collapsed');
+  toggleRibbonBtn.innerHTML = icon(ribbonHidden ? 'eye-off' : 'eye', 14);
+  toggleRibbonBtn.setAttribute('aria-label', ribbonHidden ? 'הצגת רצועת הכלים' : 'הסתרת רצועת הכלים');
+  toggleRibbonBtn.title = toggleRibbonBtn.getAttribute('aria-label');
+  toggleRibbonBtn.addEventListener('click', toggleRibbon);
+  group.appendChild(toggleRibbonBtn);
+
+  appState.books.filter(b => !b.isClosed).forEach(book => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tab-btn' + (book.id === appState.activeBookId ? ' active' : '');
+    const label = document.createElement('span');
+    label.textContent = book.title || 'ללא שם';
+    btn.appendChild(label);
+    const close = document.createElement('span');
+    close.className = 'tab-close';
+    close.textContent = '\u00D7';
+    close.setAttribute('role', 'button');
+    close.setAttribute('aria-label', 'סגירת הלשונית');
+    close.addEventListener('click', (e) => { e.stopPropagation(); closeBookTab(book.id); });
+    btn.appendChild(close);
+    btn.addEventListener('click', () => switchBook(book.id));
+    group.appendChild(btn);
+  });
+
+  const closed = appState.books.filter(b => b.isClosed);
+  if (closed.length) {
+    const sel = document.createElement('select');
+    sel.className = 'select';
+    sel.setAttribute('aria-label', 'חיבורים סגורים');
+    let html = '<option value="">סגורים (' + closed.length + ')</option>';
+    closed.forEach(b => { html += '<option value="' + esc(b.id) + '">' + esc(b.title) + '</option>'; });
+    sel.innerHTML = html;
+    sel.addEventListener('change', (e) => { if (e.target.value) reopenBook(e.target.value); });
+    group.appendChild(sel);
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'btn';
+  addBtn.innerHTML = icon('plus', 13) + '<span>חדש</span>';
+  addBtn.addEventListener('click', () => {
+    $('newBookTitleInput').value = '';
+    $('newBookTextInput').value = '';
+    $('newBookFileInput').value = '';
+    openModal('newBookModal');
+  });
+  group.appendChild(addBtn);
+}
+
+async function switchBook(bookId) {
+  await saveCurrentState();
+  appState.activeBookId = bookId;
+  loadBookIntoUI(bookId);
+  renderTabs();
+  await persistState();
+}
+
+async function closeBookTab(bookId) {
+  await saveCurrentState();
+  const book = appState.books.find(b => b.id === bookId);
+  if (book) book.isClosed = true;
+  if (appState.activeBookId === bookId) {
+    const open = appState.books.filter(b => !b.isClosed);
+    appState.activeBookId = open.length ? open[0].id : null;
+  }
+  await persistState();
+  renderTabs();
+  if (appState.activeBookId) loadBookIntoUI(appState.activeBookId);
+  else clearWorkspace();
+}
+
+async function reopenBook(bookId) {
+  const book = appState.books.find(b => b.id === bookId);
+  if (!book) return;
+  book.isClosed = false;
+  appState.activeBookId = bookId;
+  await persistState();
+  renderTabs();
+  loadBookIntoUI(bookId);
+}
+
+function clearWorkspace() {
+  $('mainTextTitle').textContent = 'אין חיבורים פתוחים';
+  $('mainText').innerHTML = '<p class="empty-hint">אין חיבור פתוח. ניתן ליצור חיבור חדש בלחיצה על "חדש" ברצועת הלשוניות.</p>';
+  $('commentariesWrapper').innerHTML = '';
+  activeCommentaryAreaId = null;
+  refreshIndex();
+  updateHiddenPanelsMenu();
+}
+
+function loadBookIntoUI(bookId) {
+  const book = appState.books.find(b => b.id === bookId);
+  if (!book) { clearWorkspace(); return; }
+
+  $('mainTextTitle').textContent = book.title || 'ללא שם';
+  $('mainText').innerHTML = book.mainText || '';
+  $('mainPanel').classList.remove('hidden-panel');
+
+  const s = book.settings || {};
+  $('layoutSelect').value = s.layout || settings.defaultLayout;
+  $('ratioSelect').value = s.ratio || '';
+  $('mainText').style.lineHeight = s.lineHeight || '';
+
+  const wrapper = $('commentariesWrapper');
+  wrapper.innerHTML = '';
+  activeCommentaryAreaId = null;
+
+  (book.commentaries || []).forEach((c, idx) => {
+    createCommentaryPaneUI({
+      areaId: c.id,
+      title: c.title,
+      items: c.items || [],
+      isActive: idx === 0,
+      numType: c.numType || settings.defaultNumType,
+      bracketType: c.bracketType || settings.defaultBracket,
+      view: c.view || 'boxed',
+      hidden: !!c.hidden
+    });
+  });
+
+  setLayout($('layoutSelect').value, false);
+  setRatio($('ratioSelect').value, false);
+  updateAllNumbering(false);
+  refreshIndex();
+  updateHiddenPanelsMenu();
+}
+
+/* ═══════════════ סרגלי עריכה ═══════════════ */
+
+function buildFormatBar(targetId) {
+  const bar = document.createElement('div');
+  bar.className = 'format-bar hidden';
+
+  const mk = (iconName, label, handler, text) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn icon-only';
+    b.innerHTML = icon(iconName, 13) + (text ? '<span>' + esc(text) + '</span>' : '');
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', handler);
+    return b;
+  };
+  const divider = () => { const d = document.createElement('span'); d.className = 'fmt-divider'; return d; };
+
+  bar.appendChild(mk('undo', 'ביטול פעולה', () => execCmd('undo')));
+  bar.appendChild(mk('redo', 'ביצוע מחדש', () => execCmd('redo')));
+  bar.appendChild(divider());
+  bar.appendChild(mk('zoom-in', 'הגדלת גופן', () => zoomText(targetId, 1)));
+  bar.appendChild(mk('zoom-out', 'הקטנת גופן', () => zoomText(targetId, -1)));
+
+  const lhLabel = document.createElement('label');
+  lhLabel.className = 'ribbon-label';
+  lhLabel.textContent = 'רווח:';
+  const lh = document.createElement('select');
+  lh.className = 'select';
+  lh.setAttribute('aria-label', 'רווח בין שורות');
+  lh.innerHTML = '<option value="">ברירת מחדל</option><option value="1.2">צפוף</option>' +
+    '<option value="1.5">רגיל</option><option value="1.8">רחב</option><option value="2.2">רחב מאוד</option>';
+  lh.addEventListener('change', () => setPanelLineHeight(targetId, lh.value));
+  lhLabel.setAttribute('for', 'lh_' + targetId);
+  lh.id = 'lh_' + targetId;
+  bar.appendChild(divider());
+  bar.appendChild(lhLabel);
+  bar.appendChild(lh);
+
+  bar.appendChild(divider());
+  bar.appendChild(mk('bold', 'מודגש', () => execCmd('bold')));
+  bar.appendChild(mk('italic', 'נטוי', () => execCmd('italic')));
+  bar.appendChild(mk('underline', 'קו תחתון', () => execCmd('underline')));
+
+  bar.appendChild(divider());
+  const fg = document.createElement('input');
+  fg.type = 'color'; fg.className = 'fmt-color';
+  fg.setAttribute('aria-label', 'צבע גופן'); fg.title = 'צבע גופן';
+  fg.addEventListener('change', () => execCmd('foreColor', fg.value));
+  bar.appendChild(fg);
+
+  const bg = document.createElement('input');
+  bg.type = 'color'; bg.className = 'fmt-color'; bg.value = '#FFF176';
+  bg.setAttribute('aria-label', 'צבע הדגשה'); bg.title = 'צבע הדגשה';
+  bg.addEventListener('change', () => execCmd('hiliteColor', bg.value));
+  bar.appendChild(bg);
+
+  bar.appendChild(divider());
+  bar.appendChild(mk('align-right', 'יישור לימין', () => execCmd('justifyRight')));
+  bar.appendChild(mk('align-center', 'יישור למרכז', () => execCmd('justifyCenter')));
+  bar.appendChild(mk('align-left', 'יישור לשמאל', () => execCmd('justifyLeft')));
+  bar.appendChild(mk('clear-format', 'ניקוי עיצוב', () => execCmd('removeFormat')));
+
+  return bar;
+}
+
+function execCmd(command, value) {
+  try {
+    document.execCommand(command, false, value === undefined ? null : value);
+  } catch (e) {
+    console.error('execCommand', command, e);
+  }
+  triggerAutoSave();
+}
+
+function zoomText(elementId, delta) {
+  const el = $(elementId);
+  if (!el) return;
+  const current = parseFloat(window.getComputedStyle(el).fontSize) || 18;
+  const next = Math.min(48, Math.max(11, current + delta));
+  el.style.fontSize = next + 'px';
+  triggerAutoSave();
+}
+
+function setPanelLineHeight(elementId, val) {
+  const el = $(elementId);
+  if (el) el.style.lineHeight = val;
+  triggerAutoSave();
+}
+
+/* ═══════════════ חלונות פירוש ═══════════════ */
+
+function createCommentaryPaneUI(opts) {
+  const areaId = opts.areaId;
+  const paneId = 'panel_' + areaId;
+  const wrapper = $('commentariesWrapper');
+
+  const panel = document.createElement('section');
+  panel.className = 'editor-panel commentary-panel' + (opts.hidden ? ' hidden-panel' : '');
+  panel.id = paneId;
+
+  /* — כותרת החלון — */
+  const header = document.createElement('div');
+  header.className = 'panel-header';
+
+  const leftSide = document.createElement('div');
+  leftSide.className = 'panel-header-side';
+
+  const badge = document.createElement('span');
+  badge.className = 'active-badge';
+  badge.textContent = 'פעיל';
+  leftSide.appendChild(badge);
+
+  const numSel = document.createElement('select');
+  numSel.className = 'select num-type-select';
+  numSel.setAttribute('aria-label', 'סוג מספור');
+  numSel.title = 'סוג מספור';
+  numSel.innerHTML =
+    '<option value="hebrew">אות (א, ב)</option>' +
+    '<option value="numeric">מספר (1, 2)</option>' +
+    '<option value="rashi">אות רש"י</option>' +
+    '<option value="dh">ד"ה</option>';
+  numSel.value = opts.numType;
+  numSel.addEventListener('change', () => updatePanelNumbering(areaId));
+  leftSide.appendChild(numSel);
+
+  const bracketSel = document.createElement('select');
+  bracketSel.className = 'select bracket-type-select';
+  bracketSel.setAttribute('aria-label', 'סוג סוגריים');
+  bracketSel.title = 'סוג סוגריים';
+  bracketSel.innerHTML =
+    '<option value="none">ללא</option>' +
+    '<option value="round">( )</option>' +
+    '<option value="square">[ ]</option>' +
+    '<option value="curly">{ }</option>';
+  bracketSel.value = opts.bracketType;
+  bracketSel.addEventListener('change', () => updatePanelNumbering(areaId));
+  leftSide.appendChild(bracketSel);
+
+  const viewBtn = document.createElement('button');
+  viewBtn.type = 'button';
+  viewBtn.className = 'btn icon-only';
+  viewBtn.innerHTML = icon('grid', 12) + '<span>' + (opts.view === 'continuous' ? 'רצף' : 'תיבות') + '</span>';
+  viewBtn.setAttribute('aria-label', 'סגנון תצוגה');
+  viewBtn.title = 'מעבר בין תצוגת תיבות לתצוגת רצף';
+  viewBtn.addEventListener('click', () => toggleViewStyle(areaId, viewBtn));
+  leftSide.appendChild(viewBtn);
+
+  const toolbarBtn = document.createElement('button');
+  toolbarBtn.type = 'button';
+  toolbarBtn.className = 'btn icon-only';
+  toolbarBtn.innerHTML = icon('pen', 12);
+  toolbarBtn.setAttribute('aria-label', 'סרגל עריכה');
+  toolbarBtn.title = 'פתיחת/סגירת סרגל עריכה';
+  leftSide.appendChild(toolbarBtn);
+
+  header.appendChild(leftSide);
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'header-title-wrapper';
+  const title = document.createElement('span');
+  title.className = 'editable-title';
+  title.contentEditable = 'true';
+  title.textContent = opts.title || 'חלון פירוש';
+  title.addEventListener('blur', () => { saveCurrentState(); refreshIndex(); updateHiddenPanelsMenu(); });
+  titleWrap.appendChild(title);
+  header.appendChild(titleWrap);
+
+  const rightSide = document.createElement('div');
+  rightSide.className = 'panel-header-side';
+
+  const hideBtn = document.createElement('button');
+  hideBtn.type = 'button';
+  hideBtn.className = 'btn icon-only';
+  hideBtn.innerHTML = icon('eye-off', 12);
+  hideBtn.setAttribute('aria-label', 'הסתרת החלון');
+  hideBtn.title = 'הסתרת החלון';
+  hideBtn.addEventListener('click', () => hidePanel(paneId));
+  rightSide.appendChild(hideBtn);
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'btn icon-only danger';
+  delBtn.innerHTML = icon('trash', 12);
+  delBtn.setAttribute('aria-label', 'מחיקת החלון');
+  delBtn.title = 'מחיקת החלון';
+  delBtn.addEventListener('click', () => confirmDeletePanel(paneId));
+  rightSide.appendChild(delBtn);
+
+  header.appendChild(rightSide);
+  panel.appendChild(header);
+
+  /* — סרגל עיצוב — */
+  const bar = buildFormatBar(areaId);
+  panel.appendChild(bar);
+  toolbarBtn.addEventListener('click', () => {
+    bar.classList.toggle('hidden');
+    toolbarBtn.classList.toggle('active', !bar.classList.contains('hidden'));
+  });
+
+  /* — אזור התוכן — */
+  const container = document.createElement('div');
+  container.className = 'content-area commentary-container ' + (opts.view === 'continuous' ? 'continuous-view' : 'boxed-view');
+  container.id = areaId;
+  container.addEventListener('focusin', () => setTargetCommentary(areaId));
+  container.addEventListener('click', () => setTargetCommentary(areaId));
+  container.addEventListener('input', triggerAutoSave);
+  panel.appendChild(container);
+
+  wrapper.appendChild(panel);
+
+  (opts.items || []).forEach(item => container.appendChild(buildCommentaryItem(item, areaId)));
+
+  if (!activeCommentaryAreaId || opts.isActive) setTargetCommentary(areaId);
+  updatePanelNumbering(areaId, false);
+}
+
+function buildCommentaryItem(item, areaId) {
+  const div = document.createElement('div');
+  div.className = 'commentary-item';
+  div.setAttribute('data-id', item.id);
+
+  const num = document.createElement('span');
+  num.className = 'dh-num';
+  num.textContent = '...';
+  num.setAttribute('role', 'button');
+  num.setAttribute('aria-label', 'פעולות על ההערה');
+  num.addEventListener('click', (e) => {
+    scrollToMainAnchor(item.id);
+    showNoteContextMenu(e, item.id, div.parentElement ? div.parentElement.id : areaId);
+  });
+  div.appendChild(num);
+
+  const title = document.createElement('span');
+  title.className = 'dh-title';
+  title.textContent = item.title || '';
+  title.setAttribute('role', 'button');
+  title.addEventListener('click', () => { scrollToMainAnchor(item.id); openNoteModal(item.id); });
+  div.appendChild(title);
+
+  const text = document.createElement('span');
+  text.className = 'comm-text';
+  text.contentEditable = 'true';
+  text.setAttribute('data-placeholder', 'כתבו כאן את החידוש...');
+  text.innerHTML = item.text || '';
+  text.addEventListener('focus', () => scrollToMainAnchor(item.id));
+  text.addEventListener('input', triggerAutoSave);
+  div.appendChild(text);
+
+  return div;
+}
+
+function addNewCommentaryPane() {
+  if (!appState.activeBookId) { toast('יש ליצור חיבור לפני הוספת חלון פירוש', 'error'); return; }
+  const types = ['hebrew', 'numeric', 'rashi', 'dh'];
+  const used = Array.from(document.querySelectorAll('.num-type-select')).map(s => s.value);
+  const existingCount = document.querySelectorAll('.commentary-panel').length;
+  const numType = types.find(t => used.indexOf(t) === -1) || types[existingCount % types.length];
+
+  createCommentaryPaneUI({
+    areaId: 'notesArea_' + Date.now(),
+    title: 'חלון פירוש חדש',
+    items: [],
+    isActive: true,
+    numType: numType,
+    bracketType: settings.defaultBracket,
+    view: 'boxed',
+    hidden: false
+  });
+  saveCurrentState();
+}
+
+function setTargetCommentary(areaId) {
+  activeCommentaryAreaId = areaId;
+  document.querySelectorAll('.commentary-panel').forEach(p => p.classList.remove('active-target'));
+  const container = $(areaId);
+  if (container) {
+    const panel = container.closest('.commentary-panel');
+    if (panel) panel.classList.add('active-target');
+  }
+}
+
+function toggleViewStyle(areaId, btn) {
+  const area = $(areaId);
+  if (!area) return;
+  const toContinuous = area.classList.contains('boxed-view');
+  area.classList.toggle('boxed-view', !toContinuous);
+  area.classList.toggle('continuous-view', toContinuous);
+  btn.innerHTML = icon('grid', 12) + '<span>' + (toContinuous ? 'רצף' : 'תיבות') + '</span>';
+  triggerAutoSave();
+}
+
+/* ═══════════════ מספור וסוגריים ═══════════════ */
+
+function numToHebrew(num) {
+  if (!num || num < 1) return String(num || '');
+  if (num > 9999) return String(num);
+  const units = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  const hundreds = ['', 'ק', 'ר', 'ש', 'ת', 'תק', 'תר', 'תש', 'תת', 'תתק'];
+
+  let out = '';
+  let n = num;
+  out += hundreds[Math.floor(n / 100) % 10] || '';
+  if (n >= 1000) out = units[Math.floor(n / 1000)] + "'" + out;
+  n = n % 100;
+  if (n === 15) out += 'טו';
+  else if (n === 16) out += 'טז';
+  else { out += tens[Math.floor(n / 10)]; out += units[n % 10]; }
+  return out;
+}
+
+function formatWithBrackets(text, bracketType) {
+  if (bracketType === 'round') return '(' + text + ')';
+  if (bracketType === 'square') return '[' + text + ']';
+  if (bracketType === 'curly') return '{' + text + '}';
+  return text;
+}
+
+function sortNotesByMainTextOrder() {
+  const anchors = Array.from(document.querySelectorAll('#mainText .note-anchor'));
+  const order = new Map();
+  anchors.forEach((a, i) => {
+    const id = a.getAttribute('data-id');
+    if (id) order.set(id, i);
+  });
+  document.querySelectorAll('.commentary-container').forEach(container => {
+    const items = Array.from(container.querySelectorAll('.commentary-item'));
+    items.sort((a, b) => {
+      const pa = order.has(a.getAttribute('data-id')) ? order.get(a.getAttribute('data-id')) : 1e9;
+      const pb = order.has(b.getAttribute('data-id')) ? order.get(b.getAttribute('data-id')) : 1e9;
+      return pa - pb;
+    });
+    items.forEach(item => container.appendChild(item));
+  });
+}
+
+function updateAllNumbering(save) {
+  sortNotesByMainTextOrder();
+  document.querySelectorAll('.commentary-container').forEach(c => updatePanelNumbering(c.id, false));
+  refreshIndex();
+  if (save !== false) triggerAutoSave();
+}
+
+function updatePanelNumbering(areaId, save) {
+  sortNotesByMainTextOrder();
+
+  const panel = $('panel_' + areaId);
+  const container = $(areaId);
+  if (!panel || !container) return;
+
+  const numType = panel.querySelector('.num-type-select').value;
+  const bracketType = panel.querySelector('.bracket-type-select').value;
+
+  panel.classList.remove('panel-num-hebrew', 'panel-num-numeric', 'panel-num-rashi', 'panel-num-dh');
+  panel.classList.add('panel-num-' + numType);
+
+  container.querySelectorAll('.commentary-item').forEach((item, index) => {
+    const noteId = item.getAttribute('data-id');
+    const n = index + 1;
+
+    let raw = numToHebrew(n);
+    if (numType === 'numeric') raw = String(n);
+    else if (numType === 'dh') raw = '\u2022';
+
+    const label = formatWithBrackets(raw, bracketType);
+
+    const numSpan = item.querySelector('.dh-num');
+    if (numSpan) {
+      numSpan.textContent = label;
+      numSpan.classList.toggle('rashi-font', numType === 'rashi');
+    }
+
+    const anchor = document.querySelector('#mainText .note-anchor[data-id="' + cssEscapeId(noteId) + '"]');
+    if (anchor) {
+      anchor.className = 'note-anchor ' + numType;
+      const oldSup = anchor.querySelector('sup');
+      if (oldSup) oldSup.remove();
+      if (numType !== 'dh') {
+        const sup = document.createElement('sup');
+        if (numType === 'rashi') sup.classList.add('rashi-font');
+        sup.textContent = label;
+        anchor.appendChild(sup);
+      }
+    }
+  });
+
+  if (save !== false) { refreshIndex(); triggerAutoSave(); }
+}
+
+function cssEscapeId(id) {
+  return String(id ?? '').replace(/["\\]/g, '\\$&');
+}
+
+/* ═══════════════ יצירת הערה מסימון ═══════════════ */
+
+function toggleMainToolbar() {
+  const bar = $('mainToolbar');
+  const btn = $('btnToggleMainToolbar');
+  bar.classList.toggle('hidden');
+  isMainEditMode = !bar.classList.contains('hidden');
+  btn.classList.toggle('active', isMainEditMode);
+  $('mainText').contentEditable = isMainEditMode ? 'true' : 'false';
+}
+
+function createNoteFromSelection() {
+  if (isMainEditMode) return;
+
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+
+  const range = sel.getRangeAt(0);
+  const mainTextEl = $('mainText');
+  if (!mainTextEl.contains(range.commonAncestorContainer)) return;
+
+  const selectedText = range.toString().trim();
+  if (!selectedText) return;
+
+  let targetAreaId = activeCommentaryAreaId;
+  let targetPanel = targetAreaId ? $('panel_' + targetAreaId) : null;
+
+  if (!targetPanel || targetPanel.classList.contains('hidden-panel')) {
+    const open = document.querySelectorAll('.commentary-panel:not(.hidden-panel)');
+    if (open.length) {
+      targetAreaId = open[0].querySelector('.commentary-container').id;
+      targetPanel = open[0];
+    } else {
+      targetAreaId = 'notesArea_' + Date.now();
+      createCommentaryPaneUI({
+        areaId: targetAreaId, title: 'חלון פירוש', items: [], isActive: true,
+        numType: settings.defaultNumType, bracketType: settings.defaultBracket,
+        view: 'boxed', hidden: false
+      });
+      targetPanel = $('panel_' + targetAreaId);
+    }
+  }
+  setTargetCommentary(targetAreaId);
+
+  const noteId = 'note_' + Date.now() + '_' + Math.floor(performance.now() % 1000);
+  const numType = targetPanel.querySelector('.num-type-select').value;
+
+  const anchor = document.createElement('span');
+  anchor.className = 'note-anchor ' + numType;
+  anchor.setAttribute('data-id', noteId);
+  try {
+    range.surroundContents(anchor);
+  } catch (e) {
+    /* הסימון חוצה תגיות — עוטפים את התוכן שחולץ */
+    anchor.appendChild(range.extractContents());
+    range.insertNode(anchor);
+  }
+
+  const cleanTitle = selectedText.replace(/[:.]+$/, '').trim();
+  const container = $(targetAreaId);
+  const item = buildCommentaryItem({ id: noteId, title: cleanTitle, text: '' }, targetAreaId);
+  container.appendChild(item);
+
+  sel.removeAllRanges();
+  updatePanelNumbering(targetAreaId);
+
+  const textInput = item.querySelector('.comm-text');
+  if (textInput) setTimeout(() => textInput.focus(), 40);
+}
+
+function scrollToMainAnchor(noteId) {
+  const anchor = document.querySelector('#mainText .note-anchor[data-id="' + cssEscapeId(noteId) + '"]');
+  if (!anchor) return;
+  anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  anchor.classList.add('flash');
+  setTimeout(() => anchor.classList.remove('flash'), 1200);
+}
+
+function unwrapAnchor(noteId) {
+  const anchor = document.querySelector('#mainText .note-anchor[data-id="' + cssEscapeId(noteId) + '"]');
+  if (!anchor) return;
+  const sup = anchor.querySelector('sup');
+  if (sup) sup.remove();
+  const parent = anchor.parentNode;
+  while (anchor.firstChild) parent.insertBefore(anchor.firstChild, anchor);
+  parent.removeChild(anchor);
+}
+
+/* ═══════════════ תפריט הקשר להערה ═══════════════ */
+
+function showNoteContextMenu(e, noteId, areaId) {
+  e.stopPropagation();
+  contextNoteId = noteId;
+  contextAreaId = areaId;
+
+  const menu = $('noteContextMenu');
+  menu.innerHTML = '';
+
+  const del = document.createElement('div');
+  del.className = 'context-menu-item';
+  del.innerHTML = icon('trash', 13) + '<span>מחיקת ההערה</span>';
+  del.addEventListener('click', triggerNoteDelete);
+  menu.appendChild(del);
+
+  const title = document.createElement('div');
+  title.className = 'context-menu-title';
+  title.textContent = 'העברה לחלון אחר:';
+  menu.appendChild(title);
+
+  let count = 0;
+  document.querySelectorAll('.commentary-panel:not(.hidden-panel)').forEach(p => {
+    const pAreaId = p.querySelector('.commentary-container').id;
+    if (pAreaId === areaId) return;
+    const row = document.createElement('div');
+    row.className = 'context-menu-item';
+    row.innerHTML = icon('move', 13) + '<span>' + esc(p.querySelector('.editable-title').textContent) + '</span>';
+    row.addEventListener('click', () => triggerNoteMove(pAreaId));
+    menu.appendChild(row);
+    count++;
+  });
+  if (!count) {
+    const none = document.createElement('div');
+    none.className = 'context-menu-title';
+    none.textContent = 'אין חלונות אחרים פתוחים';
+    menu.appendChild(none);
+  }
+
+  menu.style.display = 'block';
+  const w = menu.offsetWidth || 170;
+  const h = menu.offsetHeight || 120;
+  menu.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, e.clientX - w)) + 'px';
+  menu.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, e.clientY)) + 'px';
+}
+
+function closeContextMenu() {
+  $('noteContextMenu').style.display = 'none';
+}
+
+function triggerNoteDelete() {
+  if (!contextNoteId || !contextAreaId) return;
+  const item = document.querySelector('.commentary-item[data-id="' + cssEscapeId(contextNoteId) + '"]');
+  if (item) item.remove();
+  unwrapAnchor(contextNoteId);
+  updatePanelNumbering(contextAreaId);
+  closeContextMenu();
+}
+
+function triggerNoteMove(targetAreaId) {
+  if (!contextNoteId || !contextAreaId || !targetAreaId) return;
+  const item = document.querySelector('.commentary-item[data-id="' + cssEscapeId(contextNoteId) + '"]');
+  const target = $(targetAreaId);
+  if (item && target) target.appendChild(item);
+  updatePanelNumbering(contextAreaId, false);
+  updatePanelNumbering(targetAreaId);
+  closeContextMenu();
+}
+
+/* ═══════════════ אינדקס ═══════════════ */
+
+function refreshIndex() {
+  const list = $('indexList');
+  const filterSelect = $('indexFilterSelect');
+  if (!list) return;
+
+  const currentFilter = filterSelect ? filterSelect.value : 'all';
+  if (filterSelect) {
+    let html = '<option value="all">כל החלונות</option>';
+    document.querySelectorAll('.commentary-panel').forEach(p => {
+      const container = p.querySelector('.commentary-container');
+      if (!container) return;
+      const t = p.querySelector('.editable-title').textContent || 'חלון';
+      html += '<option value="' + esc(container.id) + '"' +
+        (currentFilter === container.id ? ' selected' : '') + '>' + esc(t) + '</option>';
+    });
+    filterSelect.innerHTML = html;
+  }
+
+  list.innerHTML = '';
+  const query = ($('searchBox').value || '').trim().toLowerCase();
+  const anchors = Array.from(document.querySelectorAll('#mainText .note-anchor'));
+  let shown = 0;
+
+  anchors.forEach(anchor => {
+    const id = anchor.getAttribute('data-id');
+    if (!id) return;
+    const item = document.querySelector('.commentary-item[data-id="' + cssEscapeId(id) + '"]');
+    if (!item) return;
+    const container = item.closest('.commentary-container');
+    if (!container) return;
+    if (currentFilter !== 'all' && container.id !== currentFilter) return;
+
+    const numLabel = item.querySelector('.dh-num') ? item.querySelector('.dh-num').textContent : '';
+    const titleText = item.querySelector('.dh-title') ? item.querySelector('.dh-title').textContent : '';
+    const bodyText = item.querySelector('.comm-text') ? item.querySelector('.comm-text').textContent : '';
+
+    if (query && (numLabel + ' ' + titleText + ' ' + bodyText).toLowerCase().indexOf(query) === -1) return;
+
+    const row = document.createElement('div');
+    row.className = 'index-item';
+    const collapsed = '<span class="index-num">' + esc(numLabel) + '</span> ' +
+      (titleText ? '<b>' + esc(titleText) + '</b> — ' : '') + esc(bodyText);
+    const expanded = '<span class="index-num">' + esc(numLabel) + '</span> <b>' + esc(titleText) + '</b><br>' + esc(bodyText);
+    row.innerHTML = collapsed;
+    row._collapsedHtml = collapsed;
+    row.addEventListener('click', () => {
+      scrollToMainAnchor(id);
+      const wasExpanded = row.classList.contains('expanded');
+      document.querySelectorAll('.index-item.expanded').forEach(el => {
+        el.classList.remove('expanded');
+        if (el._collapsedHtml) el.innerHTML = el._collapsedHtml;
+      });
+      row.innerHTML = wasExpanded ? collapsed : expanded;
+      if (!wasExpanded) row.classList.add('expanded');
+    });
+    list.appendChild(row);
+    shown++;
+  });
+
+  if (!shown) {
+    const empty = document.createElement('div');
+    empty.className = 'index-empty';
+    empty.textContent = query ? 'לא נמצאו הערות תואמות' : 'אין עדיין הערות. סמנו טקסט בחלון הראשי ליצירת הערה.';
+    list.appendChild(empty);
+  }
+}
+
+/* ═══════════════ הסתרה ומחיקה של חלונות ═══════════════ */
+
+function hidePanel(panelId) {
+  const panel = $(panelId);
+  if (!panel) return;
+  panel.classList.add('hidden-panel');
+  updateHiddenPanelsMenu();
+  refreshIndex();
+  triggerAutoSave();
+}
+
+function showPanel(panelId) {
+  const panel = $(panelId);
+  if (!panel) return;
+  panel.classList.remove('hidden-panel');
+  updateHiddenPanelsMenu();
+  refreshIndex();
+  triggerAutoSave();
+}
+
+function updateHiddenPanelsMenu() {
+  const container = $('hiddenPanelsContainer');
+  const group = $('hiddenPanelsGroup');
+  container.innerHTML = '';
+  let hidden = 0;
+
+  document.querySelectorAll('.editor-panel.hidden-panel').forEach(panel => {
+    hidden++;
+    const label = panel.id === 'mainPanel'
+      ? ($('mainTextTitle').textContent || 'ראשי')
+      : (panel.querySelector('.editable-title').textContent || 'פירוש');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn';
+    btn.innerHTML = icon('eye', 12) + '<span>' + esc(label) + '</span>';
+    btn.addEventListener('click', () => showPanel(panel.id));
+    container.appendChild(btn);
+  });
+
+  group.hidden = hidden === 0;
+}
+
+function confirmDeletePanel(panelId) {
+  panelToDelete = panelId;
+  const isMain = panelId === 'mainPanel';
+  const moveGroup = $('moveNotesGroup');
+  const select = $('moveNotesSelect');
+  select.innerHTML = '';
+
+  if (isMain) {
+    $('deletePaneDesc').textContent =
+      'זהו חלון הטקסט הראשי. מחיקתו תמחק לצמיתות את החיבור הנוכחי ואת כל ההערות שבו.';
+    moveGroup.hidden = true;
+  } else {
+    $('deletePaneDesc').textContent =
+      'ניתן להעביר את ההערות של החלון לחלון אחר לפני המחיקה, או למחוק אותן יחד עם החלון.';
+    const others = Array.from(document.querySelectorAll('.commentary-panel')).filter(p => p.id !== panelId);
+    if (others.length) {
+      others.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.querySelector('.commentary-container').id;
+        opt.textContent = p.querySelector('.editable-title').textContent || 'פירוש';
+        select.appendChild(opt);
+      });
+      moveGroup.hidden = false;
+      $('deleteActionSelect').value = 'move';
+      toggleDeleteActionUI();
+    } else {
+      moveGroup.hidden = true;
+    }
+  }
+  openModal('deletePaneModal');
+}
+
+function toggleDeleteActionUI() {
+  $('moveNotesSubGroup').style.display = $('deleteActionSelect').value === 'move' ? 'block' : 'none';
+}
+
+async function executeDeletePanelChoice() {
+  if (!panelToDelete) return;
+
+  if (panelToDelete === 'mainPanel') {
+    appState.books = appState.books.filter(b => b.id !== appState.activeBookId);
+    const open = appState.books.filter(b => !b.isClosed);
+    appState.activeBookId = open.length ? open[0].id : null;
+    await persistState();
+    renderTabs();
+    if (appState.activeBookId) loadBookIntoUI(appState.activeBookId);
+    else clearWorkspace();
+    closeAllModals();
+    panelToDelete = null;
+    toast('החיבור נמחק', 'success');
+    return;
+  }
+
+  const panel = $(panelToDelete);
+  if (panel) {
+    const action = $('moveNotesGroup').hidden ? 'delete' : $('deleteActionSelect').value;
+    if (action === 'move') {
+      const targetAreaId = $('moveNotesSelect').value;
+      const target = targetAreaId ? $(targetAreaId) : null;
+      if (target) {
+        panel.querySelectorAll('.commentary-item').forEach(item => target.appendChild(item));
+        panel.remove();
+        updatePanelNumbering(targetAreaId);
+      }
+    } else {
+      panel.querySelectorAll('.commentary-item').forEach(item => unwrapAnchor(item.getAttribute('data-id')));
+      panel.remove();
+    }
+    if (activeCommentaryAreaId && panelToDelete === 'panel_' + activeCommentaryAreaId) activeCommentaryAreaId = null;
+  }
+
+  panelToDelete = null;
+  closeAllModals();
+  updateHiddenPanelsMenu();
+  updateAllNumbering();
+  await saveCurrentState();
+}
+
+/* ═══════════════ פריסות ויחסים ═══════════════ */
+
+function setLayout(val, save) {
+  const wrapper = $('panelsWrapper');
+  wrapper.className = 'panels-wrapper ' + val;
+  const ratio = $('ratioSelect').value;
+  if (ratio) wrapper.classList.add(ratio);
+  if (ratio === 'ratio-dynamic') updateDynamicNotesVisibility();
+  if (save !== false) triggerAutoSave();
+}
+
+function setRatio(val, save) {
+  const wrapper = $('panelsWrapper');
+  wrapper.classList.remove('ratio-dynamic', 'ratio-stable');
+  if (val) wrapper.classList.add(val);
+
+  if (val === 'ratio-dynamic') {
+    updateDynamicNotesVisibility();
+  } else {
+    resetDynamicStyles();
+  }
+  if (save !== false) triggerAutoSave();
+}
+
+function resetDynamicStyles() {
+  const mainPanel = $('mainPanel');
+  mainPanel.style.flex = '';
+  mainPanel.style.height = '';
+  mainPanel.style.maxHeight = '';
+  const cw = $('commentariesWrapper');
+  cw.style.display = '';
+  cw.style.flex = '';
+  document.querySelectorAll('.commentary-item').forEach(i => { i.style.display = ''; });
+}
+
+function handleMainTextScroll() {
+  const ratio = $('ratioSelect').value;
+  if (ratio === 'ratio-dynamic') updateDynamicNotesVisibility();
+  else if (ratio === 'ratio-stable') syncStableScrollFromMain();
+}
+
+function syncStableScrollFromMain() {
+  const mainText = $('mainText');
+  if (!mainText) return;
+  const mainRect = mainText.getBoundingClientRect();
+  const anchors = mainText.querySelectorAll('.note-anchor');
+  let firstVisibleId = null;
+  for (let i = 0; i < anchors.length; i++) {
+    const r = anchors[i].getBoundingClientRect();
+    if (r.top >= mainRect.top && r.bottom <= mainRect.bottom) {
+      firstVisibleId = anchors[i].getAttribute('data-id');
+      break;
+    }
+  }
+  if (!firstVisibleId) return;
+  document.querySelectorAll('.commentary-item[data-id="' + cssEscapeId(firstVisibleId) + '"]')
+    .forEach(item => item.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+}
+
+function updateDynamicNotesVisibility() {
+  const mainText = $('mainText');
+  const mainPanel = $('mainPanel');
+  const cw = $('commentariesWrapper');
+  if (!mainText || !mainPanel) return;
+
+  if ($('ratioSelect').value !== 'ratio-dynamic') { resetDynamicStyles(); return; }
+
+  const mainRect = mainText.getBoundingClientRect();
+  const visibleIds = new Set();
+  mainText.querySelectorAll('.note-anchor').forEach(a => {
+    const r = a.getBoundingClientRect();
+    if (r.top < mainRect.bottom && r.bottom > mainRect.top) visibleIds.add(a.getAttribute('data-id'));
+  });
+
+  let count = 0;
+  let chars = 0;
+  document.querySelectorAll('.commentary-item').forEach(item => {
+    if (visibleIds.has(item.getAttribute('data-id'))) {
+      item.style.display = '';
+      count++;
+      chars += (item.textContent || '').length;
+    } else {
+      item.style.display = 'none';
+    }
+  });
+
+  if (count === 0) {
+    mainPanel.style.flex = '1 1 100%';
+    mainPanel.style.height = '100%';
+    mainPanel.style.maxHeight = '100%';
+    cw.style.display = 'none';
+    return;
+  }
+
+  cw.style.display = 'flex';
+  const mainLen = (mainText.textContent || '').length || 1;
+  let commRatio = chars / (mainLen + chars);
+  commRatio = Math.max(0.25, Math.min(0.65, commRatio));
+  const mainRatio = 1 - commRatio;
+  mainPanel.style.flex = (mainRatio * 100) + ' 1 0%';
+  mainPanel.style.height = 'auto';
+  mainPanel.style.maxHeight = (mainRatio * 100) + '%';
+  cw.style.flex = (commRatio * 100) + ' 1 0%';
+}
+
+/* ═══════════════ מודאלים ═══════════════ */
+
+function openModal(id) {
+  $('globalOverlay').classList.add('open');
+  const m = $(id);
+  if (m) m.classList.add('open');
+}
+
+function closeAllModals() {
+  $('globalOverlay').classList.remove('open');
+  document.querySelectorAll('.app-modal').forEach(m => m.classList.remove('open'));
+}
+
+function openNoteModal(noteId) {
+  const item = document.querySelector('.commentary-item[data-id="' + cssEscapeId(noteId) + '"]');
+  if (!item) return;
+  $('noteModalTitle').textContent = (item.querySelector('.dh-title').textContent || 'עריכת הערה').slice(0, 60);
+  $('noteModalContent').innerHTML = item.querySelector('.comm-text').innerHTML || '';
+  $('noteModalContent').setAttribute('data-edit-id', noteId);
+  openModal('noteModal');
+  setTimeout(() => $('noteModalContent').focus(), 50);
+}
+
+function saveNoteModal() {
+  const el = $('noteModalContent');
+  const id = el.getAttribute('data-edit-id');
+  if (id) {
+    const item = document.querySelector('.commentary-item[data-id="' + cssEscapeId(id) + '"]');
+    if (item) item.querySelector('.comm-text').innerHTML = el.innerHTML;
+  }
+  closeAllModals();
+  saveCurrentState();
+  refreshIndex();
+}
+
+async function submitNewBook() {
+  const title = $('newBookTitleInput').value.trim();
+  if (!title) { toast('יש להזין שם לחיבור', 'error'); return; }
+
+  const create = async (rawContent) => {
+    const stamp = Date.now();
+    const book = {
+      id: 'book_' + stamp,
+      title: title,
+      isClosed: false,
+      settings: { layout: settings.defaultLayout, ratio: '', lineHeight: '' },
+      mainText: rawContent ? sanitizeImportedText(rawContent) : '',
+      commentaries: [{
+        id: 'notesArea_' + stamp,
+        title: 'חידושים והערות',
+        numType: settings.defaultNumType,
+        bracketType: settings.defaultBracket,
+        view: 'boxed',
+        hidden: false,
+        items: []
+      }]
+    };
+    appState.books.push(book);
+    appState.activeBookId = book.id;
+    await persistState();
+    closeAllModals();
+    renderTabs();
+    loadBookIntoUI(book.id);
+    toast('החיבור נוצר', 'success');
+  };
+
+  const fileInput = $('newBookFileInput');
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => create(String(e.target.result || ''));
+    reader.onerror = () => toast('שגיאה בקריאת הקובץ', 'error');
+    reader.readAsText(fileInput.files[0]);
+  } else {
+    await create($('newBookTextInput').value.trim());
+  }
+}
+
+/* טקסט מיובא — מנוקה מתגיות מסוכנות, שומר על שבירת שורות */
+function sanitizeImportedText(raw) {
+  const looksLikeHtml = /<\s*(p|div|br|span|b|i|u|h[1-6])\b/i.test(raw);
+  if (!looksLikeHtml) {
+    return raw.split(/\r?\n/).map(line => esc(line)).join('<br>');
+  }
+  const doc = document.implementation.createHTMLDocument('');
+  doc.body.innerHTML = raw;
+  doc.body.querySelectorAll('script, style, iframe, object, embed, link, meta').forEach(el => el.remove());
+  doc.body.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on') || (name === 'href' && /^\s*javascript:/i.test(attr.value)) || name === 'src') {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return doc.body.innerHTML;
+}
+
+/* ═══════════════ גיבוי ושחזור ═══════════════ */
+
+function openExportModal() {
+  collectCurrentBook();
+  backupMode = 'export';
+  $('backupModalTitle').textContent = 'גיבוי הנתונים';
+  $('backupModalNote').textContent =
+    'להלן כל נתוני העורך בפורמט JSON (' + localDateStr() + '). העתיקו ושמרו במקום בטוח.';
+  $('backupText').value = JSON.stringify(appState, null, 2);
+  $('backupText').readOnly = true;
+  $('backupFileGroup').hidden = true;
+  $('btnBackupPrimary').textContent = 'העתקה';
+  openModal('backupModal');
+}
+
+function openImportModal() {
+  backupMode = 'import';
+  $('backupModalTitle').textContent = 'שחזור מגיבוי';
+  $('backupModalNote').textContent =
+    'הדביקו כאן את תוכן הגיבוי, או טענו קובץ JSON. השחזור יחליף את כל הנתונים הקיימים בעורך.';
+  $('backupText').value = '';
+  $('backupText').readOnly = false;
+  $('backupFileGroup').hidden = false;
+  $('backupFileInput').value = '';
+  $('btnBackupPrimary').textContent = 'שחזור';
+  openModal('backupModal');
+}
+
+async function handleBackupPrimary() {
+  if (backupMode === 'export') {
+    const ta = $('backupText');
+    ta.readOnly = false;
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.readOnly = true;
+    window.getSelection().removeAllRanges();
+    toast(ok ? 'הגיבוי הועתק' : 'ההעתקה נכשלה — סמנו והעתיקו ידנית', ok ? 'success' : 'error');
+    return;
+  }
+
+  const raw = $('backupText').value.trim();
+  if (!raw) { toast('לא הודבקו נתוני גיבוי', 'error'); return; }
+
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { toast('קובץ הגיבוי אינו תקין', 'error'); return; }
+  if (!parsed || !Array.isArray(parsed.books)) { toast('קובץ הגיבוי אינו תקין', 'error'); return; }
+
+  const confirmRes = await call('ui.showConfirm', {
+    title: 'שחזור מגיבוי',
+    content: 'כל הנתונים הקיימים בעורך יוחלפו בנתוני הגיבוי. להמשיך?'
+  });
+  if (confirmRes && confirmRes.confirmed === false) return;
+
+  appState = parsed;
+  const open = appState.books.filter(b => !b.isClosed);
+  if (!appState.activeBookId || !open.some(b => b.id === appState.activeBookId)) {
+    appState.activeBookId = open.length ? open[0].id : null;
+  }
+  await persistState();
+  closeAllModals();
+  renderTabs();
+  if (appState.activeBookId) loadBookIntoUI(appState.activeBookId);
+  else clearWorkspace();
+  toast('השחזור הושלם', 'success');
+}
+
+/* ═══════════════ הגדרות ═══════════════ */
+
+function openSettings() {
+  $('settingsPanel').classList.add('open');
+  $('scrim').classList.add('open');
+}
+
+function closeSettings() {
+  $('settingsPanel').classList.remove('open');
+  $('scrim').classList.remove('open');
+}
+
+function applySettingsToUI() {
+  $('setDefaultLayout').value = settings.defaultLayout;
+  $('setDefaultNum').value = settings.defaultNumType;
+  $('setDefaultBracket').value = settings.defaultBracket;
+  $('setShowIndex').checked = !!settings.showIndex;
+  $('setShowRibbon').checked = !!settings.showRibbon;
+
+  $('indexStrip').classList.toggle('collapsed', !settings.showIndex);
+  $('btnToggleIndex').classList.toggle('active', !!settings.showIndex);
+  $('appRibbon').classList.toggle('collapsed', !settings.showRibbon);
+}
+
+function toggleRibbon() {
+  settings.showRibbon = $('appRibbon').classList.contains('collapsed');
+  applySettingsToUI();
+  renderTabs();
+  persistSettings();
+}
+
+function toggleIndex() {
+  settings.showIndex = $('indexStrip').classList.contains('collapsed');
+  applySettingsToUI();
+  persistSettings();
+}
+
+/* ═══════════════ חיווט אירועים ═══════════════ */
+
+function wireUi() {
+  /* אייקונים בכפתורי הכותרת */
+  $('settingsBtn').innerHTML = icon('settings', 22);
+  $('closeSettings').innerHTML = icon('dismiss', 22);
+  $('btnToggleMainToolbar').innerHTML = icon('pen', 13);
+  $('btnHideMain').innerHTML = icon('eye-off', 13);
+  $('btnDeleteMain').innerHTML = icon('trash', 13);
+  $('btnAddPane').innerHTML = icon('plus', 13) + '<span>חלון פירוש חדש</span>';
+  $('btnToggleIndex').innerHTML = icon('list', 13) + '<span>אינדקס</span>';
+  $('btnExport').innerHTML = icon('download', 13) + '<span>גיבוי</span>';
+  $('btnImport').innerHTML = icon('upload', 13) + '<span>שחזור</span>';
+  $('btnPrint').innerHTML = icon('print', 13) + '<span>הדפסה</span>';
+
+  /* סרגל הטקסט הראשי */
+  const mainBar = buildFormatBar('mainText');
+  $('mainToolbar').replaceWith(mainBar);
+  mainBar.id = 'mainToolbar';
+
+  $('btnToggleMainToolbar').addEventListener('click', toggleMainToolbar);
+  $('btnHideMain').addEventListener('click', () => hidePanel('mainPanel'));
+  $('btnDeleteMain').addEventListener('click', () => confirmDeletePanel('mainPanel'));
+  $('btnAddPane').addEventListener('click', addNewCommentaryPane);
+  $('btnToggleIndex').addEventListener('click', toggleIndex);
+  $('btnExport').addEventListener('click', openExportModal);
+  $('btnImport').addEventListener('click', openImportModal);
+  $('btnPrint').addEventListener('click', () => {
+    try { window.print(); } catch (e) { toast('ההדפסה אינה זמינה בסביבה זו', 'error'); }
+  });
+
+  $('mainTextTitle').addEventListener('blur', () => { saveCurrentState(); updateHiddenPanelsMenu(); });
+  $('mainText').addEventListener('mouseup', createNoteFromSelection);
+  $('mainText').addEventListener('scroll', handleMainTextScroll);
+  $('mainText').addEventListener('input', triggerAutoSave);
+
+  $('layoutSelect').addEventListener('change', (e) => setLayout(e.target.value));
+  $('ratioSelect').addEventListener('change', (e) => setRatio(e.target.value));
+  $('searchBox').addEventListener('input', refreshIndex);
+  $('indexFilterSelect').addEventListener('change', refreshIndex);
+
+  $('btnSubmitNewBook').addEventListener('click', submitNewBook);
+  $('btnSaveNoteModal').addEventListener('click', saveNoteModal);
+  $('btnConfirmDelete').addEventListener('click', executeDeletePanelChoice);
+  $('deleteActionSelect').addEventListener('change', toggleDeleteActionUI);
+  $('btnBackupPrimary').addEventListener('click', handleBackupPrimary);
+  $('backupFileInput').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { $('backupText').value = String(ev.target.result || ''); };
+    reader.onerror = () => toast('שגיאה בקריאת הקובץ', 'error');
+    reader.readAsText(file);
+  });
+
+  document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', closeAllModals));
+  $('globalOverlay').addEventListener('click', closeAllModals);
+
+  $('settingsBtn').addEventListener('click', openSettings);
+  $('closeSettings').addEventListener('click', closeSettings);
+  $('scrim').addEventListener('click', closeSettings);
+
+  $('setDefaultLayout').addEventListener('change', (e) => { settings.defaultLayout = e.target.value; persistSettings(); });
+  $('setDefaultNum').addEventListener('change', (e) => { settings.defaultNumType = e.target.value; persistSettings(); });
+  $('setDefaultBracket').addEventListener('change', (e) => { settings.defaultBracket = e.target.value; persistSettings(); });
+  $('setShowIndex').addEventListener('change', (e) => { settings.showIndex = e.target.checked; applySettingsToUI(); persistSettings(); });
+  $('setShowRibbon').addEventListener('change', (e) => { settings.showRibbon = e.target.checked; applySettingsToUI(); renderTabs(); persistSettings(); });
+
+  document.addEventListener('click', closeContextMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if ($('settingsPanel').classList.contains('open')) { closeSettings(); return; }
+    if ($('noteContextMenu').style.display === 'block') { closeContextMenu(); return; }
+    if (document.querySelector('.app-modal.open')) closeAllModals();
+  });
+
+  window.addEventListener('resize', () => {
+    if ($('ratioSelect').value === 'ratio-dynamic') updateDynamicNotesVisibility();
+  });
+}
+
+/* ═══════════════ אתחול ═══════════════ */
+
+Otzaria.on('plugin.boot', async (payload) => {
+  if (payload && payload.app && payload.app.runMode === 'background') return;
+
+  applyTheme(payload ? payload.theme : null);
+  wireUi();
+  await loadStateFromStorage();
+  applySettingsToUI();
+  renderTabs();
+  if (appState.activeBookId) loadBookIntoUI(appState.activeBookId);
+  else clearWorkspace();
+  booted = true;
+  setSaveIndicator('מוכן');
+});
+
+Otzaria.on('theme.changed', applyTheme);
+</script>
+</body>
+</html>
