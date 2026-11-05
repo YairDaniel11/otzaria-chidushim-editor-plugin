@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>עורך חידושים</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -359,6 +359,54 @@
   }
   .settings-label { font-size: 0.85em; }
   .settings-about { font-size: 0.8em; opacity: 0.75; margin-bottom: 4px; }
+
+  /* ── התאמה לאנדרואיד / מגע ───────────────────── */
+  html, body { max-width: 100%; }
+  @supports (height: 100dvh) {
+    .app-modal { max-height: calc(100dvh - 40px); }
+  }
+  @media (max-width: 900px) {
+    body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    .panels-wrapper.layout-daf { grid-template-columns: 1fr; }
+    .panels-wrapper.layout-tor-v-shurot { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .panels-wrapper.layout-shura-v-torim { grid-template-rows: auto auto; }
+  }
+  @media (max-width: 700px) {
+    .workspace { flex-direction: column; overflow-y: auto; }
+    .index-strip { width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px solid var(--color-outline); }
+    .panels-wrapper { flex: 1 0 auto; }
+    .panels-wrapper.layout-torim #mainPanel { min-width: 0; }
+    .editor-panel { min-width: 0; min-height: 160px; }
+    .content-area { min-height: 120px; }
+    .select { max-width: 100%; }
+    .modal-actions .btn { flex: 1 1 auto; }
+  }
+  @media (max-width: 700px) and (pointer: coarse), (max-width: 900px) and (pointer: coarse) {
+    .input, .select, .modal-edit-area, .content-area, .editable-title, .comm-text { font-size: 16px; }
+  }
+  @media (pointer: coarse) {
+    .btn, .tab-btn, .select, .settings-btn, .close-btn, .fmt-color, .context-menu-item, .index-item, .tab-close {
+      min-height: 44px;
+    }
+    .btn, .settings-btn, .close-btn, .tab-close, .fmt-color { min-width: 44px; }
+    .tab-close { display: inline-flex; align-items: center; justify-content: center; }
+    .index-item { display: flex; align-items: center; }
+    .input { min-height: 44px; }
+    .settings-btn { left: calc(12px + env(safe-area-inset-left)); }
+    .context-menu { max-width: calc(100vw - 16px); }
+    .overlay-panel {
+      top: calc(10px + env(safe-area-inset-top)); bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+    .plugin-header { padding-top: calc(10px + env(safe-area-inset-top)); }
+    .fmt-divider { height: 28px; }
+    .format-bar { gap: 4px; }
+    .tabs-ribbon, .app-ribbon, .overlay-panel, .app-modal { -webkit-overflow-scrolling: touch; }
+    .app-ribbon { overflow-x: auto; }
+  }
+  @media (max-height: 500px) and (pointer: coarse) {
+    .app-modal { max-height: calc(100vh - 16px); padding: 12px; }
+    .index-strip { max-height: 40vh; }
+  }
 
   /* ── הדפסה ───────────────────────────────────── */
   @media print {
